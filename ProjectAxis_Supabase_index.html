@@ -761,7 +761,7 @@ function lerr(t){
 // ── API layer — replaces google.script.run ──────────────────────
 // Every gsr().withSuccessHandler(fn).funcName(args) call works unchanged.
 // Point API_BASE at your Railway URL after deploying.
-var API_BASE = (window.PROJECTAXIS_API_URL || 'https://your-app.railway.app');
+var API_BASE = (window.PROJECTAXIS_API_URL || 'projectaxis-server-production.up.railway.app');
 
 // Get stored JWT token
 function _getToken() {
