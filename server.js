@@ -24,11 +24,15 @@ const supabase = createClient(
 app.set('supabase', supabase);
 
 // ── Middleware ────────────────────────────────────────────────────
+// CORS — allow all origins (change FRONTEND_URL to restrict later)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || '*',
-  methods: ['GET','POST','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
+  origin: '*',
+  methods: ['GET','POST','PUT','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  credentials: false
 }));
+// Handle preflight OPTIONS requests explicitly
+app.options('*', cors());
 app.use(express.json({ limit: '2mb' }));
 app.use('/api/auth', rateLimit({ windowMs: 15*60*1000, max: 20, message: { ok:false, error:'Too many login attempts' } }));
 app.use('/api/',     rateLimit({ windowMs: 1*60*1000,  max: 120 }));
