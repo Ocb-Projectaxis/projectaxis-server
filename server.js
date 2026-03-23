@@ -135,6 +135,41 @@ function fillTemplate(tpl, vars) {
 app.get('/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString() }));
 
 // ════════════════════════════════════════════════════════════════
+// DEBUG ENDPOINT — remove after fixing login
+// ════════════════════════════════════════════════════════════════
+app.get('/api/debug/login-test', async (req, res) => {
+  const sb = req.app.get('supabase');
+  try {
+    // Step 1: Find user
+    const { data: users, error: dbErr } = await sb
+      .from('users')
+      .select('id,username,password_hash,role,active')
+      .ilike('username', 'admin')
+      .limit(1);
+
+    if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
+    if (!users?.length) return res.json({ step: 'user_lookup', error: 'User not found' });
+
+    const user = users[0];
+
+    // Step 2: Test bcrypt
+    const match = await bcrypt.compare('admin123', user.password_hash);
+
+    return res.json({
+      step: 'complete',
+      userFound: true,
+      username: user.username,
+      role: user.role,
+      active: user.active,
+      hashLength: user.password_hash.length,
+      passwordMatch: match
+    });
+  } catch (e) {
+    return res.json({ step: 'exception', error: e.message });
+  }
+});
+
+// ════════════════════════════════════════════════════════════════
 // AUTH ROUTES  /api/auth/...
 // ════════════════════════════════════════════════════════════════
 
