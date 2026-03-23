@@ -146,6 +146,16 @@ app.get('/api/debug/login-test', async (req, res) => {
       .select('id,username,password_hash,role,active')
       .ilike('username', 'admin')
       .limit(1);
+    // ONE-TIME hash generator — remove after use
+app.get('/api/debug/make-hash', async (req, res) => {
+  const hash = await bcrypt.hash('admin123', 10);
+  res.json({ hash });
+});
+```
+
+Commit, wait 60 seconds for Railway to redeploy, then visit:
+```
+https://projectaxis-server-production.up.railway.app/api/debug/make-hash
 
     if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
     if (!users?.length) return res.json({ step: 'user_lookup', error: 'User not found' });
