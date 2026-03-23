@@ -152,12 +152,7 @@ app.get('/api/debug/make-hash', async (req, res) => {
   res.json({ hash });
 });
 ```
-
-Commit, wait 60 seconds for Railway to redeploy, then visit:
-```
-https://projectaxis-server-production.up.railway.app/api/debug/make-hash
-
-    if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
+if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
     if (!users?.length) return res.json({ step: 'user_lookup', error: 'User not found' });
 
     const user = users[0];
