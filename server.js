@@ -165,7 +165,12 @@ app.get('/ping', (req, res) => res.json({ ok: true, time: new Date().toISOString
 // ════════════════════════════════════════════════════════════════
 // DEBUG ENDPOINT — remove after fixing login
 // ════════════════════════════════════════════════════════════════
+  app.get('/api/debug/make-hash', async (req, res) => {
+  const hash = await bcrypt.hash('admin123', 10);
+  res.json({ hash });
+});
 app.get('/api/debug/login-test', async (req, res) => {
+
   const sb = req.app.get('supabase');
   try {
     // Step 1: Find user
