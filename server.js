@@ -181,7 +181,10 @@ if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
 // ════════════════════════════════════════════════════════════════
 // AUTH ROUTES  /api/auth/...
 // ════════════════════════════════════════════════════════════════
-
+app.get('/api/debug/make-hash', async (req, res) => {
+  const hash = await bcrypt.hash('admin123', 10);
+  res.json({ hash });
+});
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
