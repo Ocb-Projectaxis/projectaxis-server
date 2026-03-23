@@ -8,7 +8,35 @@ require('dotenv').config();
 const express    = require('express');
 const cors       = require('cors');
 const rateLimit  = require('express-rate-limit');
-const bcrypt     = require('bcryptjs');
+let bcrypt;
+try {
+  bcrypt = require('bcryptjs');
+  if (typeof bcrypt.compare !== 'function') throw new Error('bcryptjs loaded incorrectly');
+} catch(e) {
+  console.error('bcryptjs load error:', e.message);
+  // Fallback: inline bcrypt-compatible functions
+  const crypto = require('crypto');
+  bcrypt = {
+    hash: async (pwd, rounds) => {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.pbkdf2Sync(pwd, salt, 10000, 32, 'sha256').toString('hex');
+      return 'pbkdf2:' + salt + ':' + hash;
+    },
+    compare: async (pwd, stored) => {
+      if (stored.startsWith('pbkdf2:')) {
+        const [, salt, hash] = stored.split(':');
+        const test = crypto.pbkdf2Sync(pwd, salt, 10000, 32, 'sha256').toString('hex');
+        return test === hash;
+      }
+      return false;
+    },
+    hashSync: (pwd, rounds) => {
+      const salt = crypto.randomBytes(16).toString('hex');
+      const hash = crypto.pbkdf2Sync(pwd, salt, 10000, 32, 'sha256').toString('hex');
+      return 'pbkdf2:' + salt + ':' + hash;
+    }
+  };
+}
 const jwt        = require('jsonwebtoken');
 const nodemailer = require('nodemailer');
 const { createClient } = require('@supabase/supabase-js');
@@ -146,23 +174,21 @@ app.get('/api/debug/login-test', async (req, res) => {
       .select('id,username,password_hash,role,active')
       .ilike('username', 'admin')
       .limit(1);
-// ONE-TIME hash generator — remove after use
-app.get('/api/debug/make-hash', async (req, res) => {
-  const hash = await bcrypt.hash('admin123', 10);
-  res.json({ hash });
-});
-```
 
-Commit, wait 60 seconds for Railway to redeploy, then visit:
-```
-https://projectaxis-server-production.up.railway.app/api/debug/make-hash
-if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
+    if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
     if (!users?.length) return res.json({ step: 'user_lookup', error: 'User not found' });
 
     const user = users[0];
 
     // Step 2: Test bcrypt
-    const match = await bcrypt.compare('admin123', user.password_hash);
+    let match = false;
+    let bcryptError = null;
+    try {
+      if (typeof bcrypt.compare !== 'function') throw new Error('bcrypt.compare is not a function, bcrypt type: ' + typeof bcrypt);
+      match = await bcrypt.compare('admin123', user.password_hash);
+    } catch(e) {
+      bcryptError = e.message;
+    }
 
     return res.json({
       step: 'complete',
@@ -171,7 +197,10 @@ if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
       role: user.role,
       active: user.active,
       hashLength: user.password_hash.length,
-      passwordMatch: match
+      passwordMatch: match,
+      bcryptError: bcryptError,
+      bcryptType: typeof bcrypt,
+      bcryptCompareType: typeof bcrypt.compare
     });
   } catch (e) {
     return res.json({ step: 'exception', error: e.message });
@@ -181,10 +210,7 @@ if (dbErr) return res.json({ step: 'db_query', error: dbErr.message });
 // ════════════════════════════════════════════════════════════════
 // AUTH ROUTES  /api/auth/...
 // ════════════════════════════════════════════════════════════════
-app.get('/api/debug/make-hash', async (req, res) => {
-  const hash = await bcrypt.hash('admin123', 10);
-  res.json({ hash });
-});
+
 // POST /api/auth/login
 app.post('/api/auth/login', async (req, res) => {
   const { username, password } = req.body;
